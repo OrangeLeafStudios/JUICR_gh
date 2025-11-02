@@ -1,0 +1,83 @@
+if params.len != 2 or params[0] == "-h" or params[0] == "--help" then
+	exit("Usage: juicr <ip-address> <port>")
+end if
+metaxploit = include_lib("/lib/metaxploit.so")
+if not metaxploit then exit("Error: Missing metaxploit library")
+net_session = metaxploit.net_use(params[0],params[1].to_int)
+if not net_session then exit("Error: can't connect to net session")
+metaLib = net_session.dump_lib
+if not metaLib then exit("Error: Dump library failed!")
+listMem = metaxploit.scan(metaLib)
+index = 1
+for itemMem in listMem
+	print(index +": [" + itemMem + "]")
+	index = index + 1
+end for
+if listMem.len == 0 then exit("Scan completed: No issues detected.")
+// Memory Listing
+print("Scan completed: detected issues in " + listMem.len + " memory zones.")
+option = ""
+inputOk = false
+while( not inputOk )
+	option = user_input("Select memory index: ").to_int
+	if typeof(option) != "number" or (option < 1 or option > listMem.len) then
+		print("Invalid input. Type a valid number")
+	else 
+		inputOk = true
+	end if
+end while
+// Vunerability Scan
+print("Scanning for vulnerabilities at memory zone: " + listMem[option - 1])
+memScan = metaxploit.scan_address(metaLib, listMem[option - 1])
+print(memScan)
+
+vulnerableScan = function(memScan)
+    stringHist = ["", "", ""]
+    requirements = []
+    requirement = []
+    requirementWrite = false
+    unsecVals = {}
+    unsecVal = ""
+    for word in memScan.replace(char(10)," ").split(" ")
+        if stringHist.join() == "string copy in" or stringHist.join() == "loop in array" then
+            unsecVal = word[:word.len-1]
+        end if
+        if word == "*" then
+            if requirementWrite then
+                requirements.push(requirement.join())
+                requirement = []
+            else
+                requirementWrite = true
+            end if
+        else if word == "" then
+            if requirement.len > 0 then
+                requirements.push(requirement.join())
+            else
+                requirements.push("* No requirements.")
+            end if
+            requirementWrite = false
+            unsecVals[unsecVal] = requirements
+            requirements = []
+            requirement = []
+        end if
+        
+        if requirementWrite then
+            requirement.push(word)
+        end if
+        stringHist.push(word)
+        stringHist.pull()
+    end for
+    return unsecVals
+end function
+results = vulnerableScan(memScan)
+for item in results.indexes
+	print(item)
+	reqs = results[item]
+	if results[item].len > 0 then
+		for req in reqs
+			print("  "+req)
+		end for
+	else // will never happen
+		print("  * No requirements.")
+	end if	
+end for

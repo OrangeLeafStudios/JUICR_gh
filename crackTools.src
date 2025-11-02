@@ -1,0 +1,47 @@
+// crackTools.src
+VulnerableScan = function(memScan)
+    stringHist = ["", "", ""]
+    requirements = []
+    requirement = []
+    requirementWrite = false
+    unsecVals = {}
+    unsecVal = ""
+    if debug_text then print_style("VulnerableScan >> Interpreting output...")
+    for word in memScan.replace(char(10)," ").split(" ")
+        if stringHist.join() == "string copy in" or stringHist.join() == "loop in array" then
+            unsecVal = StripStyle(word[:word.len-1])
+            if debug_text then print_style("VulnerableScan >>   Found keyword ["+unsecVal+"]")
+        end if
+        if word == "*" then
+            if requirementWrite then
+                if debug_text then print_style("VulnerableScan >>   "+requirement.join())
+                requirements.push(requirement.join())
+                requirement = []
+            else
+                requirementWrite = true
+            end if
+        else if word == "" then
+            if requirement.len > 0 then
+                if debug_text then print_style("VulnerableScan >>   "+requirement.join())
+                requirements.push(requirement.join())
+            end if
+            requirementWrite = false
+            unsecVals[unsecVal] = requirements
+            requirements = []
+            requirement = []
+        end if
+        
+        if requirementWrite then
+            requirement.push(word)
+        end if
+        stringHist.push(word)
+        stringHist.pull()
+    end for
+    return unsecVals
+end function
+
+GetPassword = function(userPass)
+	if userPass.len != 2 then exit("decipher: wrong syntax")
+	password = cryptools.decipher(userPass[1])
+	return password
+end function

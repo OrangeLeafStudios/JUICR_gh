@@ -1,0 +1,40 @@
+// StyleStrip.src
+StripStyle = function(text = "")
+  tags = "align|alpha|color|b|i|cspace|font|indent|line-height|line-indent|link|lowercase|uppercase|smallcaps|margin|mark|mspace|noparse|nobr|page|pos|size|space|sprite|s|u|style|sub|sup|voffset|width|link|#[0-9a-f]{3}|#[0-9a-f]{6}"
+  return text.replace("<\/?(" + tags + ")(\s.*?|=.*?|.{0})>", "")
+end function
+
+// greyscript version — we can't type box/block glyphs directly so build them with char(codepoint)
+
+block = "<mark=#FFFFFFff>  </mark>"//char(9608) + char(9608)                           // U+2588
+vulnerablescan = "<color=#70FDFF>VulnerableScan</color>"
+reqfilter = "<color=#FFCE5A>ReqFilter</color>" 
+reqsearch = "<color=#FF8E56>ReqSearch</color>"
+double_arrow = "<color=#FFFF00> >></color>"
+single_arrow = "<color=#FFFF00> > </color>"
+bullet = "<color=#FFAA00> * </color>"
+open_bracket = "[<b><color=#FFFF00>"
+close_bracket = "</color></b>]"
+title_bg = "</b></color>"
+title_fg = "<color=#FF7300><b>"
+filling = "</color><color=#000000>_</color>"+title_fg
+
+// helper to replace tokens in the original miniscript lines
+AddStyle = function(line)
+  line = line.replace("\~", title_bg)
+  line = line.replace("\%", title_fg)
+  line = line.replace("\$", filling)
+  line = line.replace("\ >\ ", single_arrow)
+  line = line.replace("\ \*\ ", bullet)
+  line = line.replace("\[\]", block)
+  line = line.replace("\[", open_bracket)
+  line = line.replace("\]", close_bracket)
+  line = line.replace("VulnerableScan", vulnerablescan)
+  line = line.replace("ReqFilter", reqfilter)
+  line = line.replace("ReqSearch", reqsearch)
+  return line
+end function
+
+print_style = function(line)
+  print(AddStyle(line))
+end function

@@ -1,0 +1,30 @@
+if params.len != 2 or params[0] == "-h" or params[0] == "--help" then
+	exit("Usage: juicr <ip-address> <port>")
+end if
+metaxploit = include_lib("/lib/metaxploit.so")
+if not metaxploit then exit("Error: Missing metaxploit library")
+netsession = metaxploit.net_use(params[0],params[1].to_int)
+metaLib = netsession.dump_lib
+if not metaLib then exit("Error: Dump library failed!")
+listMem = metaxploit.scan(metaLib)
+index = 1
+for itemMem in listMem
+	print(index +": [" + itemMem + "]")
+	index = index + 1
+end for
+if listMem.len == 0 then exit("Scan completed: No issues detected.")
+
+print("Scan completed: detected issues in " + listMem.len + " memory zones.")
+option = ""
+inputOk = false
+while( not inputOk )
+	option = user_input("Select memory index: ").to_int
+	if typeof(option) != "number" or (option < 1 or option > listMem.len) then
+		print("Invalid input. Type a valid number")
+	else 
+		inputOk = true
+	end if
+end while
+print("Scanning for vulnerabilities at memory zone: " + listMem[option - 1])
+memScan = metaxploit.scan_address(metaLib, listMem[option - 1])
+print(memScan)

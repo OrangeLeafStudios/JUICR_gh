@@ -1,0 +1,152 @@
+TitleScreen=function(hasSubtitle=1)
+bgcol="<color=#391D46>"
+bgcol2="<color=#1D2646>"
+fgcol="<color=#FFFFFF>"
+endcol="</color>"
+print(AddStyle(bgcol+"___%._.~_%._.~_%._.~_%._____.~_%._____.~_%._____.~_____"+endcol))
+print(AddStyle(bgcol+"____%\$\~_%\$\~_%\$\~_%\__$__\~-%\$$___\~_%\$$_$$\~____"+endcol))
+print(AddStyle(bgcol+"_%.__.\$\~_%\$\~_%\$\~___%\$\~___%\$\~_____%\$$../\~___"+endcol))
+print(AddStyle(bgcol+"__%\$\_\$\~_%\$\_\$\~_%._\$\_.~_%\$\___.~_%\$$\\$\~__"+endcol))
+print(AddStyle(bgcol+"___%\_____\~_%\_____\~_%\_____\~_%\_____\~_%\__\\_\~_"+endcol))
+if hasSubtitle then
+print(AddStyle(bgcol2+"+=+================================================+=+"+endcol))
+print(AddStyle(bgcol2+"|#|"+fgcol+"   Allows you to break into any door possible   "+bgcol2+"|#|"+endcol))
+print(AddStyle(bgcol2+"|#|"+fgcol+"          by <color=#FFAA00>orange<color=green>leaf<color=purple>36</color></color></color>/<color=#00FFBB>clover<color=#00FF00>leaf<color=purple>36</color></color></color>          "+bgcol2+"|#|"+endcol))
+print(AddStyle(bgcol2+"+=+================================================+=+"+endcol))
+end if
+end function
+superten_values="bdeghjklmortuvwyz".values
+infoscreen=function(successKeys,filter="",showAll=1,confirming=0)
+wait(0.1)
+clear_screen
+TitleScreen(0)
+type_counter={"number":0,"computer":0,"shell":0,"file":0}
+print("Successful exploits:")
+idx=1
+listed_choices=[]
+for key in successKeys.indexes
+parsedKey=key.split(">>")
+result=successKeys[key].result
+filterPass=(filter=="" or filter==typeof(result) or filter==result or filter==str(idx)) and filter!="none"
+if filterPass or showAll then
+indexSelect=("0123456789".values+superten_values)[idx]
+print_style("["+indexSelect+"] <b>"+parsedKey[1]+"</b> at mem [<b>"+parsedKey[0]+"</b>]")
+listed_choices.push(indexSelect)
+type_counter[typeof(result)]=type_counter[typeof(result)]+(1)
+if result==1 and filterPass then
+print_style("    > Password change successful!")
+else if typeof(result)=="computer" and filterPass then
+print_style("    > Computer")
+HandleComputerObj(result)
+else if typeof(result)=="shell" and filterPass then
+print_style("    > Shell")
+HandleComputerObj(result.host_computer)
+else if typeof(result)=="file" and filterPass then
+if result.is_folder then
+print_style("    > Folder ["+result.name+"] ("+result.path+")")
+else
+print_style("    > File ["+result.name+"] at "+result.path)
+end if
+print_style("    > Owned by user ["+result.owner+"] under group ["+result.group+"]")
+print_style("    > Size: "+result.size+" bytes")
+end if
+if filterPass then
+for req in successKeys[key].req
+print_style("    "+req)
+end for
+end if
+end if
+idx=idx+(1)
+end for
+if confirming then
+print_style("===== [Confirmation] =====")
+if listed_choices.len>1 then print_style("<color=red>!!!</color>>The first item will be chosen")
+print_style("Are you sure you want to run this exploit? [y/n]")
+else
+print_style("===== [Actions] =====")
+print_style("|"+listed_choices.join(", ")+"| > Select exploit")
+print_style("===== [Filters] =====")
+key_assoc={"number":"p","computer":"c","shell":"s","file":"f"}
+desc_assoc={"number":"Password","computer":"Computer","shell":"Shell","file":"File/Folder"}
+print_style("|a| > All exploits")
+print_style("|n| > No exploits")
+for type in type_counter.indexes
+print_style("|"+key_assoc[type]+"| > ("+type_counter[type]+") "+desc_assoc[type]+" exploits")
+end for
+print_style("|i| > "+["Show","Hide"][showAll]+" unfiltered exploits")
+end if
+return listed_choices
+end function
+HandleInput=function(prompt="",validActions=[""])
+arrowKeys=["UpArrow","DownArrow"]
+validActions=validActions+(arrowKeys)
+input=user_input(prompt,0,1,0)
+if validActions.indexOf(input)!=null or input=="" then
+return input
+end if
+end function
+SelectExploit=function(successKeys)
+chosen_exploit=""
+chosen_key=""
+inputOK=0
+showHidden=1
+listingChoice=""
+userInput=""
+confirming=0
+while not inputOK
+valid_choices=infoscreen(successKeys,listingChoice,showHidden,confirming)
+print("Last key pressed ["+userInput+"] | Current filter ["+listingChoice+"]")
+if confirming then
+userInput=user_input("> ")
+if userInput=="y" then
+confirming=0
+inputOK=1
+idx=1
+for key in successKeys.indexes
+if valid_choices[0]==str(idx) then
+chosen_exploit=successKeys[key]
+chosen_key=key
+end if
+idx=idx+(1)
+end for
+else if userInput=="n" then
+confirming=0
+showHidden=1
+end if
+else
+userInput=HandleInput("> ",valid_choices+"qcfspani".values+superten_values)
+if userInput=="q" then inputOK=1
+if userInput=="i" then showHidden=not showHidden
+if userInput=="a" then listingChoice=""
+if userInput=="n" then listingChoice="none"
+if userInput=="c" then listingChoice="computer"
+if userInput=="f" then listingChoice="file"
+if userInput=="s" then listingChoice="shell"
+if userInput=="p" then listingChoice="number"
+selected_option=valid_choices.indexOf(userInput)
+if selected_option!=null then
+listingChoice=str(selected_option+1)
+end if
+if userInput=="UpArrow" or userInput=="DownArrow" then
+if listingChoice==val(listingChoice)+"" then
+if valid_choices.len<val(listingChoice)-1 then
+listingChoice="1"
+end if
+else
+listingChoice="1"
+end if
+if userInput=="UpArrow" then
+listingChoice=str(max(0,val(listingChoice)-1))
+end if
+if userInput=="DownArrow" then
+listingChoice=str(min(valid_choices.len,val(listingChoice)+1))
+end if
+end if
+if userInput=="" then
+showHidden=0
+confirming=1
+end if
+end if
+end while
+return [chosen_key,chosen_exploit]
+end function

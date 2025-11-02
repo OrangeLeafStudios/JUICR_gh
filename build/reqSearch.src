@@ -1,0 +1,42 @@
+ReqFilter=function(mapExploit,reqCount=0)
+result=[]
+for itemMem in mapExploit.indexes
+if debug_text then print_style("ReqFilter >> Checking mem zone ["+itemMem+"]")
+for unsecVal in mapExploit[itemMem].indexes
+if debug_text then print_style("ReqFilter >>   Checking unsecure val ["+unsecVal+"]")
+if mapExploit[itemMem][unsecVal].len==reqCount then
+if debug_text then print_style("ReqFilter >>     Appending "+itemMem+">>"+unsecVal)
+result.push(itemMem+">>"+unsecVal)
+end if
+end for
+end for
+return result
+end function
+ReqSearch=function(mapExploit,keyword,mem="")
+result=[]
+if mem=="" then
+if debug_text then print_style("ReqSearch >> Mem arg blank")
+for itemMem in mapExploit.indexes
+if debug_text then print_style("ReqSearch >> Checking mem zone ["+itemMem+"]")
+for unsecVal in mapExploit[itemMem].indexes
+if debug_text then print_style("ReqSearch >>   Checking unsecure val ["+unsecVal+"] with ["+keyword+"] ("+(unsecVal==keyword)+")")
+if unsecVal==keyword then
+return mapExploit[itemMem][keyword]
+end if
+end for
+end for
+else
+if mapExploit.hasIndex(mem) then
+if debug_text then print_style("ReqSearch >> Checking mem zone ["+mem+"]")
+for unsecVal in mapExploit[mem].indexes
+if debug_text then print_style("ReqSearch >>   Checking unsecure val ["+unsecVal+"] with ["+keyword+"] ("+(unsecVal==keyword)+")")
+if unsecVal==keyword then
+result=mapExploit[mem][unsecVal]
+end if
+end for
+else
+if debug_text then print_style("ReqSearch >> Invalid memory zone!")
+end if
+end if
+return result
+end function
