@@ -1,2 +1,20 @@
 # JUICR
-A basic multi-tool for Grey Hack made by yours truly
+```
+  ._. ._. ._._._____. ._____. ._____._____
+   \ \ \ \ \ \ \__  _\ \  ___\ \  __ \____
+.__.\ \ \ \ \ \   \ \   \ \     \  ../\___
+ \ \_\ \ \ \_\ \ ._\ \_. \ \___. \  \\ \__
+  \_____\ \_____\ \_____\ \_____\ \__\\ \_
+```
+
+A basic multi-tool for Grey Hack made by an orange with a leaf🍊🍃, or otherwise, by a cloverleaf🍀
+
+Like most custom-written tools, made for convenience (and also because I hate paying for single-use exploits :p)
+
+Currently, it is capable of utilizing remote exploits to grant the user access to a target device in the network.
+
+Potential features
+ - LAN scanning
+ - Cache for memory addresses, exploits, and passwords
+ - Auto-install (and auto-delete) on target computer
+ - Router targeting
