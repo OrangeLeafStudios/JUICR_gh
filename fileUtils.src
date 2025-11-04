@@ -1,0 +1,113 @@
+// fileUtils.src
+
+fs_rm = function(params)
+	if params.len < 1 or params.len > 2 or params[0] == "-h" or params[0] == "--help" then
+		return command_info("rm_usage")
+	end if
+
+	pathFile = get_abs_path(params[0])
+	isRecursive = 0
+	if params[0] == "-r" then
+		if params.len == 1 then return command_info("rm_usage")
+		isRecursive = 1
+		pathFile = params[1]
+	end if
+
+	file = get_shell.host_computer.File(pathFile)
+	if file == null then return "rm: file not found: " + pathFile
+	if not file.has_permission("w") then return "rm: permission denied"
+
+	if file.is_folder == 1 and isRecursive == 0 and file.is_symlink == 0 then
+		return "rm: " + file.name + " is a directory"
+	end if
+
+	output = file.delete
+	if output != null and output.len > 0 then return output
+	return 1
+end function
+
+fs_touch = function(params)
+	if params.len != 1 or params[0] == "-h" or params[0] == "--help" then
+		return command_info("touch_usage")
+	end if
+
+	pathFile = get_abs_path(params[0])
+	pathParent = parent_path(pathFile)
+	computer = get_shell.host_computer
+
+	if pathParent == pathFile then
+		pathParent = current_path
+	end if
+
+	parent = computer.File(pathParent)
+	if not parent then return "touch: " + pathParent + " not found"
+	if not parent.has_permission("w") then return "touch: permission denied"
+
+	arrayPath = pathFile.split("/")
+	output = computer.touch(parent.path, arrayPath[arrayPath.len - 1])
+	if output and output != 1 then return output
+	return 1
+end function
+
+fs_mkdir = function(params)
+	if params.len != 1 or params[0] == "-h" or params[0] == "--help" then
+		return command_info("mkdir_usage")
+	end if
+
+	computer = get_shell.host_computer
+	pathFile = get_abs_path(params[0])
+	pathParent = parent_path(pathFile)
+	existFile = computer.File(pathFile)
+
+	if pathParent == pathFile then
+		pathParent = current_path
+	end if
+
+	parent = computer.File(pathParent)
+	if parent == null then
+		return "mkdir: " + pathParent + " not found"
+	else if existFile != null then
+		return "mkdir: " + existFile.path + " file exists"
+	else if not parent.has_permission("w") then
+		return "mkdir: permission denied"
+	else
+		arrayPath = pathFile.split("/")
+		output = computer.create_folder(parent.path, arrayPath[arrayPath.len - 1])
+		if output != null and output != 1 then return output
+	end if
+
+	return 1
+end function
+
+fs_rmdir = function(params)
+	if params.len != 1 or params[0] == "-h" or params[0] == "--help" then
+		return command_info("rmdir_usage")
+	end if
+
+	pathFile = get_abs_path(params[0])
+	computer = get_shell.host_computer
+	file = computer.File(pathFile)
+
+	if file == null then return "rmdir: " + pathFile + " not found"
+	if not file.has_permission("w") then return "rmdir: permission denied"
+	if file.is_folder != 1 then return "rmdir: " + file.name + " is not a directory"
+	if file.is_symlink == 1 then
+
+		output = file.delete
+		if output != null and output.len > 0 then return output
+		return 1
+	end if
+
+	output = file.delete
+	if output != null and output != 1 then return output
+	return 1
+end function
+
+run_fs_command = function(cmd, params)
+	print(cmd+"|"+params)a
+	if cmd == "rm" then return fs_rm(params)
+	if cmd == "touch" then return fs_touch(params)
+	if cmd == "mkdir" then return fs_mkdir(params)
+	if cmd == "rmdir" then return fs_rmdir(params)
+	return "unknown command: " + cmd
+end function

@@ -1,8 +1,10 @@
-import_code("/home/orangeleaf36/Kh1gY/styleStrip.src")
-import_code("/home/orangeleaf36/Kh1gY/crackTools.src")
-import_code("/home/orangeleaf36/Kh1gY/reqSearch.src")
-import_code("/home/orangeleaf36/Kh1gY/terminalInterface.src")
+import_code("/bin/CS4Zz/styleStrip.src")
+import_code("/bin/CS4Zz/crackTools.src")
+import_code("/bin/CS4Zz/fileUtils.src")
+import_code("/bin/CS4Zz/reqSearch.src")
+import_code("/bin/CS4Zz/terminalInterface.src")
 target_users=[]
+user_passwords={}
 min=function(a,b)
 if a>b then return b
 if a<b then return a
@@ -20,39 +22,147 @@ end if
 end function
 HandleComputerObj=function(result)
 user_folder=result.File("/home/")
-print_style("    > Permission tree at /home:")
 if user_folder.is_folder then
 folders=user_folder.get_folders
 for folder in folders
 AddTargetUser(folder.name)
-print_style("      * "+folder.name+" : "+folder.permissions)
-for file in get_files(folder)
-print_style("        * "+file.permissions+" : "+file.name)
 end for
+end if
+if target_users.len==1 then
+if target_users[0]=="guest" then
+print_style("    > Limited user access: Guest account only")
+return 
+else
+print_style("    > Targeting user ["+target_users[0]+"]")
+end if
+else if target_users.len==0 then
+print_style("    > No user accounts found on system")
+return 
+end if
+passwords=result.File("/etc/passwd").get_content
+if passwords.len>0 then
+lines=passwords.split("\n")
+padding="    > "
+print(padding+"Found "+lines.len+" user/s")
+for user in lines
+user_format=user.split(":")
+if user_passwords.indexes.indexOf(user)==null then
+print_style("  "+padding+"Deciphering user ["+user_format[0]+"] > ["+user_format[1]+"]")
+user_pass=cryptools.decipher(user_format[1])
+user_passwords[user]=user_pass
+else
+user_pass=user_passwords[user]
+end if
 end for
 end if
 end function
-debug_text=1
-TitleScreen
-if params.len!=3 or params[0]=="-h" or params[0]=="--help" then
-exit("Usage: juicr <ip-address> <port> <keyword>")
+CachePrep=function
+cacheFolder=get_shell.host_computer.File("/.juicr_cache")
+if cacheFolder==null then
+get_shell.host_computer.create_folder("/",".juicr_cache")
 end if
-passwordArg=params[2]
+end function
+CacheRemove=function
+cacheFolder=get_shell.host_computer.File("/.juicr_cache")
+if cacheFolder!=null then
+cacheFolder.delete
+end if
+end function
+debug_text=1
+clearScreen=0
+TitleScreen
+if params.len!=1 or params[0]=="-h" or params[0]=="--help" then
+exit("Usage: juicr <ip-address>")
+end if
+CachePrep
+print_style("Type [-q] anytime to quit")
+print_style("Type [-n] for no password")
+isLanIp=is_lan_ip(params[0])
+passwordArg=user_input("New password > ")
+ports=null
+firewallRules=null
+if passwordArg=="-q" then exit("User exit")
+if passwordArg=="-n" then passwordArg=""
+if passwordArg=="" then print("No password in use, Password exploits are disabled.")
+if isLanIp then
+router=get_router
+else
+router=get_router(params[0])
+end if
+if router==null then exit("Error: IP address not found")
+if not isLanIp then
+ports=router.used_ports
+else
+ports=router.device_ports(ipAddress)
+end if
+if ports.len==0 then
+exit("No open ports found.")
+end if
+print("\n== [NETWORK INFO] ==")
+routerVersion=router.kernel_version
+if routerVersion then
+print_style(" > kernel_router.so v"+routerVersion+" ")
+end if
+firewallRules=router.firewall_rules
+if typeof(firewallRules)=="string" then print(firewallRules)
+info="ACTION PORT SOURCE_IP DESTINATION_IP"
+for rules in firewallRules
+info=info+"\n"+rules
+end for
+if firewallRules.len==0 then
+print("No firewall rules found.")
+else
+print(format_columns(info)+"\n")
+end if
+info="PORT STATE SERVICE VERSION LAN"
+for port in ports
+service_info=router.port_info(port)
+lan_ips=port.get_lan_ip
+port_status="open"
+if (port.is_closed and not isLanIp) then
+port_status="closed"
+end if
+info=info+"\n"+port.port_number+" "+port_status+" "+service_info+" "+lan_ips
+end for
+print(format_columns(info)+"\n")
+inputOK=0
+portSel=null
+portLAN=null
+print_style("Type [-r] to target router kernel")
+while not inputOK
+portSel=user_input("Input port number > ")
+if portSel=="-q" then exit("User exit")
+if portSel=="-r" then
+portSel=0
+portLAN=params[0]
+inputOK=1
+end if
+for port in ports
+if port.port_number==val(portSel) then
+portSel=val(portSel)
+portLAN=port.get_lan_ip
+inputOK=1
+end if
+end for
+end while
+print("== [LIBS] ===")
 metaxploit=include_lib("/lib/metaxploit.so")
 if not metaxploit then
 metaxploit=include_lib(current_path+"/metaxploit.so")
 end if
 if not metaxploit then exit("Error: Missing metaxploit library")
+print_style(" > "+metaxploit+" ")
 cryptools=include_lib("/lib/crypto.so")
 if not cryptools then
 cryptools=include_lib(current_path+"/crypto.so")
 end if
 if not cryptools then exit("Error: Can't find crypto.so library in the /lib path or the current folder")
-net_session=metaxploit.net_use(params[0],params[1].to_int)
+print_style(" > "+cryptools+" ")
+net_session=metaxploit.net_use(params[0],portSel)
 if not net_session then exit("Error: can't connect to net session")
 metaLib=net_session.dump_lib
 if not metaLib then exit("Error: Dump library failed!")
-print("Scanning "+metaLib.lib_name+" "+metaLib.version)
+print_style(" > "+metaLib.lib_name+" "+metaLib.version)
 listMem=metaxploit.scan(metaLib)
 if listMem.len==0 then exit("Scan completed: No issues detected.")
 if debug_text then print("Found "+listMem.len+" memory zones.")
@@ -62,6 +172,12 @@ if debug_text then print("Scanning ["+itemMem+"]...")
 memScan=metaxploit.scan_address(metaLib,itemMem)
 mapExploit[itemMem]=VulnerableScan(memScan)
 end for
+exploitCount=0
+for mem in mapExploit
+for itemKey in mem
+exploitCount=exploitCount+(1)
+end for
+end for
 successKeys={}
 for i in range(0,3)
 print("Attempting exploits with "+i+" requirement/s...")
@@ -70,7 +186,11 @@ for entry in attemptKeys
 data={}
 exploit=entry.split(">>")
 print("=== ["+entry+"] ===")
+if passwordArg=="" then
+result=metaLib.overflow(exploit[0],exploit[1])
+else
 result=metaLib.overflow(exploit[0],exploit[1],passwordArg)
+end if
 if result then
 print("Success!"+char(10))
 data["req"]=ReqSearch(mapExploit,exploit[1],exploit[0])
@@ -82,10 +202,33 @@ end for
 chosen_string=SelectExploit(successKeys)
 chosen_key=chosen_string[0]
 chosen_exploit=chosen_string[1]
-clear_screen
+if clearScreen then clear_screen
 TitleScreen(0)
-print(chosen_key+" ("+typeof(chosen_exploit.result)+")")
-if typeof(chosen_exploit.result)=="shell" then
-chosen_exploit.result.start_terminal
+print(chosen_exploit)
+if chosen_exploit=="" then
+exit("<mark=#391D46><color=#FFAA00>JUICR</color></mark> closed")
+end if
+result=chosen_exploit.result
+print(chosen_key+" ("+typeof(result)+")")
+if typeof(result)=="shell" then
+if portSel==0 then
+routerlibs=result.File("/lib").get_files
+for lib in routerlibs
+print("Library "+lib.name)
+end for
+else
+result.start_terminal
+end if
+end if
+if typeof(result)=="file" then
+print("Name "+result.name)
+print("Owner "+result.owner)
+print("Is Folder? "+result.is_folder)
+print("Is Binary? "+result.is_binary)
+if result.is_folder then
+for file in result.get_files
+print("File "+file.path)
+end for
+end if
 end if
 exit("<mark=#391D46><color=#FFAA00>JUICR</color></mark> closed")

@@ -1,4 +1,4 @@
-BUILD_DESTINATION="/home/orangeleaf36";BUILD_RESOURCE_DESTINATION="/home/orangeleaf36/Kh1gY";BUILD_AUTO_COMPILE=1;s = get_shell;c = s.host_computer;m = function(filePath, content, isNew);segments = filePath.split("/")[1 : ];fileName = segments.pop;for segment in segments;parentPath = "/" + segments[ : __segment_idx].join("/");folderName = segment;if parentPath == "/" then;folderPath = "/" + folderName;else;folderPath = parentPath + "/" + folderName;end if;folderHandle = c.File(folderPath);if folderHandle == null then;result = c.create_folder(parentPath, folderName) == 1;if result != 1 then exit("Could not create folder in """ + folderPath + """ due to: " + result);print("New folder """ + folderPath + """ got created.");folderHandle = c.File(folderPath);end if;if not folderHandle.is_folder then exit("Entity at """ + folderPath + """ is not a folder. Installation got aborted.");end for;parentPath = "/" + segments.join("/");fileEntity = c.File(filePath);if fileEntity == null then;result = c.touch(parentPath, fileName);if result != 1 then exit("Could not create file in """ + filePath + """ due to: " + result);fileEntity = c.File(filePath);end if;if fileEntity == null then exit("Unable to get file at """ + filePath + """. Installation got aborted.");if fileEntity.is_folder then exit("File at """ + filePath + """ is a folder but should be a source file. Installation got aborted.");if fileEntity.is_binary then exit("File at """ + filePath + """ is a binary but should be a source file. Installation got aborted.");if isNew then;fileEntity.set_content(content);print("New file """ + filePath + """ got created.");else;fileEntity.set_content(fileEntity.get_content + content);print("Content got appended to """ + filePath + """.");end if;end function;d = function;c.File(program_path).delete;end function;m("/home/orangeleaf36/Kh1gY/styleStrip.src","StripStyle=function(text="""")
+BUILD_DESTINATION="/bin";BUILD_RESOURCE_DESTINATION="/bin/CS4Zz";BUILD_AUTO_COMPILE=1;s = get_shell;c = s.host_computer;m = function(filePath, content, isNew);segments = filePath.split("/")[1 : ];fileName = segments.pop;for segment in segments;parentPath = "/" + segments[ : __segment_idx].join("/");folderName = segment;if parentPath == "/" then;folderPath = "/" + folderName;else;folderPath = parentPath + "/" + folderName;end if;folderHandle = c.File(folderPath);if folderHandle == null then;result = c.create_folder(parentPath, folderName) == 1;if result != 1 then exit("Could not create folder in """ + folderPath + """ due to: " + result);print("New folder """ + folderPath + """ got created.");folderHandle = c.File(folderPath);end if;if not folderHandle.is_folder then exit("Entity at """ + folderPath + """ is not a folder. Installation got aborted.");end for;parentPath = "/" + segments.join("/");fileEntity = c.File(filePath);if fileEntity == null then;result = c.touch(parentPath, fileName);if result != 1 then exit("Could not create file in """ + filePath + """ due to: " + result);fileEntity = c.File(filePath);end if;if fileEntity == null then exit("Unable to get file at """ + filePath + """. Installation got aborted.");if fileEntity.is_folder then exit("File at """ + filePath + """ is a folder but should be a source file. Installation got aborted.");if fileEntity.is_binary then exit("File at """ + filePath + """ is a binary but should be a source file. Installation got aborted.");if isNew then;fileEntity.set_content(content);print("New file """ + filePath + """ got created.");else;fileEntity.set_content(fileEntity.get_content + content);print("Content got appended to """ + filePath + """.");end if;end function;d = function;c.File(program_path).delete;end function;m("/bin/CS4Zz/styleStrip.src","StripStyle=function(text="""")
 tags=""align|alpha|color|b|i|cspace|font|indent|line-height|line-indent|link|lowercase|uppercase|smallcaps|margin|mark|mspace|noparse|nobr|page|pos|size|space|sprite|s|u|style|sub|sup|voffset|width|link|#[0-9a-f]{3}|#[0-9a-f]{6}""
 return text.replace(""<\/?(""+tags+"")(\s.*?|=.*?|.{0})>"","""")
 end function
@@ -30,7 +30,7 @@ return line
 end function
 print_style=function(line)
 print(AddStyle(line))
-end function",1);m("/home/orangeleaf36/Kh1gY/crackTools.src","VulnerableScan=function(memScan)
+end function",1);m("/bin/CS4Zz/crackTools.src","VulnerableScan=function(memScan)
 stringHist=["""","""",""""]
 requirements=[]
 requirement=[]
@@ -73,7 +73,97 @@ GetPassword=function(userPass)
 if userPass.len!=2 then exit(""decipher: wrong syntax"")
 password=cryptools.decipher(userPass[1])
 return password
-end function",1);m("/home/orangeleaf36/Kh1gY/reqSearch.src","ReqFilter=function(mapExploit,reqCount=0)
+end function",1);m("/bin/CS4Zz/fileUtils.src","fs_rm=function(params)
+if params.len<1 or params.len>2 or params[0]==""-h"" or params[0]==""--help"" then
+return command_info(""rm_usage"")
+end if
+pathFile=get_abs_path(params[0])
+isRecursive=0
+if params[0]==""-r"" then
+if params.len==1 then return command_info(""rm_usage"")
+isRecursive=1
+pathFile=params[1]
+end if
+file=get_shell.host_computer.File(pathFile)
+if file==null then return ""rm: file not found: ""+pathFile
+if not file.has_permission(""w"") then return ""rm: permission denied""
+if file.is_folder==1 and isRecursive==0 and file.is_symlink==0 then
+return ""rm: ""+file.name+"" is a directory""
+end if
+output=file.delete
+if output!=null and output.len>0 then return output
+return 1
+end function
+fs_touch=function(params)
+if params.len!=1 or params[0]==""-h"" or params[0]==""--help"" then
+return command_info(""touch_usage"")
+end if
+pathFile=get_abs_path(params[0])
+pathParent=parent_path(pathFile)
+computer=get_shell.host_computer
+if pathParent==pathFile then
+pathParent=current_path
+end if
+parent=computer.File(pathParent)
+if not parent then return ""touch: ""+pathParent+"" not found""
+if not parent.has_permission(""w"") then return ""touch: permission denied""
+arrayPath=pathFile.split(""/"")
+output=computer.touch(parent.path,arrayPath[arrayPath.len-1])
+if output and output!=1 then return output
+return 1
+end function
+fs_mkdir=function(params)
+if params.len!=1 or params[0]==""-h"" or params[0]==""--help"" then
+return command_info(""mkdir_usage"")
+end if
+computer=get_shell.host_computer
+pathFile=get_abs_path(params[0])
+pathParent=parent_path(pathFile)
+existFile=computer.File(pathFile)
+if pathParent==pathFile then
+pathParent=current_path
+end if
+parent=computer.File(pathParent)
+if parent==null then
+return ""mkdir: ""+pathParent+"" not found""
+else if existFile!=null then
+return ""mkdir: ""+existFile.path+"" file exists""
+else if not parent.has_permission(""w"") then
+return ""mkdir: permission denied""
+else
+arrayPath=pathFile.split(""/"")
+output=computer.create_folder(parent.path,arrayPath[arrayPath.len-1])
+if output!=null and output!=1 then return output
+end if
+return 1
+end function
+fs_rmdir=function(params)
+if params.len!=1 or params[0]==""-h"" or params[0]==""--help"" then
+return command_info(""rmdir_usage"")
+end if
+pathFile=get_abs_path(params[0])
+computer=get_shell.host_computer
+file=computer.File(pathFile)
+if file==null then return ""rmdir: ""+pathFile+"" not found""
+if not file.has_permission(""w"") then return ""rmdir: permission denied""
+if file.is_folder!=1 then return ""rmdir: ""+file.name+"" is not a directory""
+if file.is_symlink==1 then
+output=file.delete
+if output!=null and output.len>0 then return output
+return 1
+end if
+output=file.delete
+if output!=null and output!=1 then return output
+return 1
+end function
+run_fs_command=function(cmd,params)
+print(cmd+""|""+params)(a)
+if cmd==""rm"" then return fs_rm(params)
+if cmd==""touch"" then return fs_touch(params)
+if cmd==""mkdir"" then return fs_mkdir(params)
+if cmd==""rmdir"" then return fs_rmdir(params)
+return ""unknown command: ""+cmd
+end function",1);m("/bin/CS4Zz/reqSearch.src","ReqFilter=function(mapExploit,reqCount=0)
 result=[]
 for itemMem in mapExploit.indexes
 if debug_text then print_style(""ReqFilter >> Checking mem zone [""+itemMem+""]"")
@@ -114,7 +204,7 @@ if debug_text then print_style(""ReqSearch >> Invalid memory zone!"")
 end if
 end if
 return result
-end function",1);m("/home/orangeleaf36/Kh1gY/terminalInterface.src","TitleScreen=function(hasSubtitle=1)
+end function",1);m("/bin/CS4Zz/terminalInterface.src","TitleScreen=function(hasSubtitle=1)
 bgcol=""<color=#391D46>""
 bgcol2=""<color=#1D2646>""
 fgcol=""<color=#FFFFFF>""
@@ -134,10 +224,10 @@ end function
 superten_values=""bdeghjklmortuvwyz"".values
 infoscreen=function(successKeys,filter="""",showAll=1,confirming=0)
 wait(0.1)
-clear_screen
+if clearScreen then clear_screen
 TitleScreen(0)
 type_counter={""number"":0,""computer"":0,""shell"":0,""file"":0}
-print(""Successful exploits:"")
+print(successKeys.len+""/""+exploitCount+"" successful exploits at ""+portLAN+"":""+portSel)
 idx=1
 listed_choices=[]
 for key in successKeys.indexes
@@ -190,6 +280,7 @@ for type in type_counter.indexes
 print_style(""|""+key_assoc[type]+""| > (""+type_counter[type]+"") ""+desc_assoc[type]+"" exploits"")
 end for
 print_style(""|i| > ""+[""Show"",""Hide""][showAll]+"" unfiltered exploits"")
+print_style(""|q| > Quit tool"")
 end if
 return listed_choices
 end function
@@ -265,11 +356,13 @@ end if
 end if
 end while
 return [chosen_key,chosen_exploit]
-end function",1);m("/home/orangeleaf36/Kh1gY/juicr.src","import"+"_"+"code(""/home/orangeleaf36/Kh1gY/styleStrip.src"")
-import"+"_"+"code(""/home/orangeleaf36/Kh1gY/crackTools.src"")
-import"+"_"+"code(""/home/orangeleaf36/Kh1gY/reqSearch.src"")
-import"+"_"+"code(""/home/orangeleaf36/Kh1gY/terminalInterface.src"")
+end function",1);m("/bin/CS4Zz/juicr.src","import"+"_"+"code(""/bin/CS4Zz/styleStrip.src"")
+import"+"_"+"code(""/bin/CS4Zz/crackTools.src"")
+import"+"_"+"code(""/bin/CS4Zz/fileUtils.src"")
+import"+"_"+"code(""/bin/CS4Zz/reqSearch.src"")
+import"+"_"+"code(""/bin/CS4Zz/terminalInterface.src"")
 target_users=[]
+user_passwords={}
 min=function(a,b)
 if a>b then return b
 if a<b then return a
@@ -287,39 +380,147 @@ end if
 end function
 HandleComputerObj=function(result)
 user_folder=result.File(""/home/"")
-print_style(""    > Permission tree at /home:"")
 if user_folder.is_folder then
 folders=user_folder.get_folders
 for folder in folders
 AddTargetUser(folder.name)
-print_style(""      * ""+folder.name+"" : ""+folder.permissions)
-for file in get_files(folder)
-print_style(""        * ""+file.permissions+"" : ""+file.name)
 end for
+end if
+if target_users.len==1 then
+if target_users[0]==""guest"" then
+print_style(""    > Limited user access: Guest account only"")
+return 
+else
+print_style(""    > Targeting user [""+target_users[0]+""]"")
+end if
+else if target_users.len==0 then
+print_style(""    > No user accounts found on system"")
+return 
+end if
+passwords=result.File(""/etc/passwd"").get_content
+if passwords.len>0 then
+lines=passwords.split(""\n"")
+padding=""    > ""
+print(padding+""Found ""+lines.len+"" user/s"")
+for user in lines
+user_format=user.split("":"")
+if user_passwords.indexes.indexOf(user)==null then
+print_style(""  ""+padding+""Deciphering user [""+user_format[0]+""] > [""+user_format[1]+""]"")
+user_pass=cryptools.decipher(user_format[1])
+user_passwords[user]=user_pass
+else
+user_pass=user_passwords[user]
+end if
 end for
 end if
 end function
-debug_text=1
-TitleScreen
-if params.len!=3 or params[0]==""-h"" or params[0]==""--help"" then
-exit(""Usage: juicr <ip-address> <port> <keyword>"")
+CachePrep=function
+cacheFolder=get_shell.host_computer.File(""/.juicr_cache"")
+if cacheFolder==null then
+get_shell.host_computer.create_folder(""/"","".juicr_cache"")
 end if
-passwordArg=params[2]
+end function
+CacheRemove=function
+cacheFolder=get_shell.host_computer.File(""/.juicr_cache"")
+if cacheFolder!=null then
+cacheFolder.delete
+end if
+end function
+debug_text=1
+clearScreen=0
+TitleScreen
+if params.len!=1 or params[0]==""-h"" or params[0]==""--help"" then
+exit(""Usage: juicr <ip-address>"")
+end if
+CachePrep
+print_style(""Type [-q] anytime to quit"")
+print_style(""Type [-n] for no password"")
+isLanIp=is_lan_ip(params[0])
+passwordArg=user_input(""New password > "")
+ports=null
+firewallRules=null
+if passwordArg==""-q"" then exit(""User exit"")
+if passwordArg==""-n"" then passwordArg=""""
+if passwordArg=="""" then print(""No password in use, Password exploits are disabled."")
+if isLanIp then
+router=get_router
+else
+router=get_router(params[0])
+end if
+if router==null then exit(""Error: IP address not found"")
+if not isLanIp then
+ports=router.used_ports
+else
+ports=router.device_ports(ipAddress)
+end if
+if ports.len==0 then
+exit(""No open ports found."")
+end if
+print(""\n== [NETWORK INFO] =="")
+routerVersion=router.kernel_version
+if routerVersion then
+print_style("" > kernel_router.so v""+routerVersion+"" "")
+end if
+firewallRules=router.firewall_rules
+if typeof(firewallRules)==""string"" then print(firewallRules)
+info=""ACTION PORT SOURCE_IP DESTINATION_IP""
+for rules in firewallRules
+info=info+""\n""+rules
+end for
+if firewallRules.len==0 then
+print(""No firewall rules found."")
+else
+print(format_columns(info)+""\n"")
+end if
+info=""PORT STATE SERVICE VERSION LAN""
+for port in ports
+service_info=router.port_info(port)
+lan_ips=port.get_lan_ip
+port_status=""open""
+if (port.is_closed and not isLanIp) then
+port_status=""closed""
+end if
+info=info+""\n""+port.port_number+"" ""+port_status+"" ""+service_info+"" ""+lan_ips
+end for
+print(format_columns(info)+""\n"")
+inputOK=0
+portSel=null
+portLAN=null
+print_style(""Type [-r] to target router kernel"")
+while not inputOK
+portSel=user_input(""Input port number > "")
+if portSel==""-q"" then exit(""User exit"")
+if portSel==""-r"" then
+portSel=0
+portLAN=params[0]
+inputOK=1
+end if
+for port in ports
+if port.port_number==val(portSel) then
+portSel=val(portSel)
+portLAN=port.get_lan_ip
+inputOK=1
+end if
+end for
+end while
+print(""== [LIBS] ==="")
 metaxploit=include_lib(""/lib/metaxploit.so"")
 if not metaxploit then
 metaxploit=include_lib(current_path+""/metaxploit.so"")
 end if
 if not metaxploit then exit(""Error: Missing metaxploit library"")
+print_style("" > ""+metaxploit+"" "")
 cryptools=include_lib(""/lib/crypto.so"")
 if not cryptools then
 cryptools=include_lib(current_path+""/crypto.so"")
 end if
 if not cryptools then exit(""Error: Can't find crypto.so library in the /lib path or the current folder"")
-net_session=metaxploit.net_use(params[0],params[1].to_int)
+print_style("" > ""+cryptools+"" "")
+net_session=metaxploit.net_use(params[0],portSel)
 if not net_session then exit(""Error: can't connect to net session"")
 metaLib=net_session.dump_lib
 if not metaLib then exit(""Error: Dump library failed!"")
-print(""Scanning ""+metaLib.lib_name+"" ""+metaLib.version)
+print_style("" > ""+metaLib.lib_name+"" ""+metaLib.version)
 listMem=metaxploit.scan(metaLib)
 if listMem.len==0 then exit(""Scan completed: No issues detected."")
 if debug_text then print(""Found ""+listMem.len+"" memory zones."")
@@ -329,6 +530,12 @@ if debug_text then print(""Scanning [""+itemMem+""]..."")
 memScan=metaxploit.scan_address(metaLib,itemMem)
 mapExploit[itemMem]=VulnerableScan(memScan)
 end for
+exploitCount=0
+for mem in mapExploit
+for itemKey in mem
+exploitCount=exploitCount+(1)
+end for
+end for
 successKeys={}
 for i in range(0,3)
 print(""Attempting exploits with ""+i+"" requirement/s..."")
@@ -337,7 +544,11 @@ for entry in attemptKeys
 data={}
 exploit=entry.split("">>"")
 print(""=== [""+entry+""] ==="")
+if passwordArg=="""" then
+result=metaLib.overflow(exploit[0],exploit[1])
+else
 result=metaLib.overflow(exploit[0],exploit[1],passwordArg)
+end if
 if result then
 print(""Success!""+char(10))
 data[""req""]=ReqSearch(mapExploit,exploit[1],exploit[0])
@@ -349,10 +560,33 @@ end for
 chosen_string=SelectExploit(successKeys)
 chosen_key=chosen_string[0]
 chosen_exploit=chosen_string[1]
-clear_screen
+if clearScreen then clear_screen
 TitleScreen(0)
-print(chosen_key+"" (""+typeof(chosen_exploit.result)+"")"")
-if typeof(chosen_exploit.result)==""shell"" then
-chosen_exploit.result.start_terminal
+print(chosen_exploit)
+if chosen_exploit=="""" then
+exit(""<mark=#391D46><color=#FFAA00>JUICR</color></mark> closed"")
 end if
-exit(""<mark=#391D46><color=#FFAA00>JUICR</color></mark> closed"")",1);d;tryGetFile = function(pc, path, maxTries = 20);handle = File(pc, path);tries = 0;while (handle == null);if (tries > maxTries) then;break;end if;handle = File(pc, path);tries = tries + 1;print("Failed to get file """ + path + """. (" + tries + "/" + maxTries + " tries)");wait(0.1);end while;return handle;end function;rootFilePath = "/juicr.src";filePaths = ["/styleStrip.src","/crackTools.src","/reqSearch.src","/terminalInterface.src","/juicr.src"];tmpDirectory = "CjX20";myShell = get_shell;myComputer = host_computer(myShell);srcFile = tryGetFile(myComputer, BUILD_RESOURCE_DESTINATION + rootFilePath);if srcFile == null then exit("EXIT_CODE=1;EXIT_MESSAGE=Couldn't find source file in " + BUILD_RESOURCE_DESTINATION + rootFilePath + ";");fileName = name(srcFile);binaryName = replace_regex(fileName, "\.[^.]+$", "");destination = parent_path(path(srcFile));result = create_folder(myComputer, destination, tmpDirectory);if result != 1 then exit("EXIT_CODE=1;EXIT_MESSAGE=Error when creating temporary build folder! Reason: " + result + ";");tmpFolder = tryGetFile(myComputer, destination + "/" + tmpDirectory);if tmpFolder == null then exit("EXIT_CODE=1;EXIT_MESSAGE=Couldn't find temporary build folder in " + destination + "/" + tmpDirectory + ";");result = copy(srcFile, tmpFolder.path, "dddd.src");if result != 1 then exit("EXIT_CODE=1;EXIT_MESSAGE=Error when moving source file into temporary build folder! Reason: " + result + ";");tmpFile = tryGetFile(myComputer, tmpFolder.path + "/dddd.src");if (tmpFile == null) then exit("EXIT_CODE=1;EXIT_MESSAGE=Cannot find temporary file!;");result = build(myShell, tmpFolder.path + "/dddd.src", tmpFolder.path, 1);if result != "" then exit("EXIT_CODE=1;EXIT_MESSAGE=Error when building! Reason: " + result + ";");binaryFile = tryGetFile(myComputer, tmpFolder.path + "/dddd");if binaryFile == null then exit("EXIT_CODE=1;EXIT_MESSAGE=Couldn't find binary file in " + tmpFolder.path + "/dddd;");result = move(binaryFile, BUILD_DESTINATION, binaryName);if result != 1 then exit("EXIT_CODE=1;EXIT_MESSAGE=Error when moving binary file into destination folder! Reason: " + result + ";");delete(File(myComputer, BUILD_RESOURCE_DESTINATION));print("Build done in " + destination);
+result=chosen_exploit.result
+print(chosen_key+"" (""+typeof(result)+"")"")
+if typeof(result)==""shell"" then
+if portSel==0 then
+routerlibs=result.File(""/lib"").get_files
+for lib in routerlibs
+print(""Library ""+lib.name)
+end for
+else
+result.start_terminal
+end if
+end if
+if typeof(result)==""file"" then
+print(""Name ""+result.name)
+print(""Owner ""+result.owner)
+print(""Is Folder? ""+result.is_folder)
+print(""Is Binary? ""+result.is_binary)
+if result.is_folder then
+for file in result.get_files
+print(""File ""+file.path)
+end for
+end if
+end if
+exit(""<mark=#391D46><color=#FFAA00>JUICR</color></mark> closed"")",1);d;tryGetFile = function(pc, path, maxTries = 20);handle = File(pc, path);tries = 0;while (handle == null);if (tries > maxTries) then;break;end if;handle = File(pc, path);tries = tries + 1;print("Failed to get file """ + path + """. (" + tries + "/" + maxTries + " tries)");wait(0.1);end while;return handle;end function;rootFilePath = "/juicr.src";filePaths = ["/styleStrip.src","/crackTools.src","/fileUtils.src","/reqSearch.src","/terminalInterface.src","/juicr.src"];tmpDirectory = "4nes5";myShell = get_shell;myComputer = host_computer(myShell);srcFile = tryGetFile(myComputer, BUILD_RESOURCE_DESTINATION + rootFilePath);if srcFile == null then exit("EXIT_CODE=1;EXIT_MESSAGE=Couldn't find source file in " + BUILD_RESOURCE_DESTINATION + rootFilePath + ";");fileName = name(srcFile);binaryName = replace_regex(fileName, "\.[^.]+$", "");destination = parent_path(path(srcFile));result = create_folder(myComputer, destination, tmpDirectory);if result != 1 then exit("EXIT_CODE=1;EXIT_MESSAGE=Error when creating temporary build folder! Reason: " + result + ";");tmpFolder = tryGetFile(myComputer, destination + "/" + tmpDirectory);if tmpFolder == null then exit("EXIT_CODE=1;EXIT_MESSAGE=Couldn't find temporary build folder in " + destination + "/" + tmpDirectory + ";");result = copy(srcFile, tmpFolder.path, "dddd.src");if result != 1 then exit("EXIT_CODE=1;EXIT_MESSAGE=Error when moving source file into temporary build folder! Reason: " + result + ";");tmpFile = tryGetFile(myComputer, tmpFolder.path + "/dddd.src");if (tmpFile == null) then exit("EXIT_CODE=1;EXIT_MESSAGE=Cannot find temporary file!;");result = build(myShell, tmpFolder.path + "/dddd.src", tmpFolder.path, 1);if result != "" then exit("EXIT_CODE=1;EXIT_MESSAGE=Error when building! Reason: " + result + ";");binaryFile = tryGetFile(myComputer, tmpFolder.path + "/dddd");if binaryFile == null then exit("EXIT_CODE=1;EXIT_MESSAGE=Couldn't find binary file in " + tmpFolder.path + "/dddd;");result = move(binaryFile, BUILD_DESTINATION, binaryName);if result != 1 then exit("EXIT_CODE=1;EXIT_MESSAGE=Error when moving binary file into destination folder! Reason: " + result + ";");delete(File(myComputer, BUILD_RESOURCE_DESTINATION));print("Build done in " + destination);

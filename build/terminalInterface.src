@@ -18,10 +18,10 @@ end function
 superten_values="bdeghjklmortuvwyz".values
 infoscreen=function(successKeys,filter="",showAll=1,confirming=0)
 wait(0.1)
-clear_screen
+if clearScreen then clear_screen
 TitleScreen(0)
 type_counter={"number":0,"computer":0,"shell":0,"file":0}
-print("Successful exploits:")
+print(successKeys.len+"/"+exploitCount+" successful exploits at "+portLAN+":"+portSel)
 idx=1
 listed_choices=[]
 for key in successKeys.indexes
@@ -74,6 +74,7 @@ for type in type_counter.indexes
 print_style("|"+key_assoc[type]+"| > ("+type_counter[type]+") "+desc_assoc[type]+" exploits")
 end for
 print_style("|i| > "+["Show","Hide"][showAll]+" unfiltered exploits")
+print_style("|q| > Quit tool")
 end if
 return listed_choices
 end function
