@@ -18,3 +18,8 @@ Potential features
  - Cache for memory addresses, exploits, and passwords
  - Auto-install (and auto-delete) on target computer
  - Router targeting
+
+## How to install?
+- Go to /build & copy the contents of installer0.src
+- Paste the contents in a new script in Grey Hack
+- Run & enjoy!
