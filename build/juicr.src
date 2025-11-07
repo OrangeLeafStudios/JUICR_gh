@@ -1,8 +1,9 @@
-import_code("/bin/CS4Zz/styleStrip.src")
-import_code("/bin/CS4Zz/crackTools.src")
-import_code("/bin/CS4Zz/fileUtils.src")
-import_code("/bin/CS4Zz/reqSearch.src")
-import_code("/bin/CS4Zz/terminalInterface.src")
+import_code("/bin/GOBAq/styleStrip.src")
+import_code("/bin/GOBAq/crackTools.src")
+import_code("/bin/GOBAq/jsonUtils.src")
+import_code("/bin/GOBAq/fileUtils.src")
+import_code("/bin/GOBAq/reqSearch.src")
+import_code("/bin/GOBAq/terminalInterface.src")
 target_users=[]
 user_passwords={}
 min=function(a,b)
@@ -20,7 +21,7 @@ if target_users.indexOf(username)==null then
 target_users.push(username)
 end if
 end function
-HandleComputerObj=function(result)
+HandleComputerObj=function(result,mitigateLog=0)
 user_folder=result.File("/home/")
 if user_folder.is_folder then
 folders=user_folder.get_folders
@@ -28,24 +29,16 @@ for folder in folders
 AddTargetUser(folder.name)
 end for
 end if
-if target_users.len==1 then
-if target_users[0]=="guest" then
-print_style("    > Limited user access: Guest account only")
-return 
-else
-print_style("    > Targeting user ["+target_users[0]+"]")
-end if
-else if target_users.len==0 then
-print_style("    > No user accounts found on system")
-return 
-end if
-passwords=result.File("/etc/passwd").get_content
+pwFile=result.File("/etc/passwd")
+passwords=pwFile.get_content
 if passwords.len>0 then
 lines=passwords.split("\n")
 padding="    > "
+stdout="USER PASSWORD"
 print(padding+"Found "+lines.len+" user/s")
 for user in lines
 user_format=user.split(":")
+if user_format.len<2 then continue
 if user_passwords.indexes.indexOf(user)==null then
 print_style("  "+padding+"Deciphering user ["+user_format[0]+"] > ["+user_format[1]+"]")
 user_pass=cryptools.decipher(user_format[1])
@@ -53,8 +46,56 @@ user_passwords[user]=user_pass
 else
 user_pass=user_passwords[user]
 end if
+stdout=stdout+("\n"+user_format[0]+" "+user_pass)
+end for
+for line in format_columns(stdout).split("\n")
+print(padding+line)
 end for
 end if
+if target_users.len==1 then
+if target_users[0]=="guest" then
+print_style("    > Limited user access: Guest account only")
+else
+print_style("    > Targeting user ["+target_users[0]+"]")
+end if
+else if target_users.len==0 then
+print_style("    > No user accounts found on system")
+return 
+end if
+if not mitigateLog then return 
+if user_passwords.indexes.indexOf("root")==null then return 
+get_shell.connect_service
+if logFile.has_permission("w") then
+print("Log Delete? "+logFile.delete)
+print("Log Write? "+logFile.set_content(""))
+else
+print("permission denied")
+end if
+end function
+HandleRouter=function(result)
+routerlibs=result.host_computer.File("/lib").get_files
+for lib in routerlibs
+print("File "+lib.name)
+print("> Loading...")
+routerLib=metaxploit.load(lib.path)
+if routerLib==null then continue
+print("> Scanning "+routerLib.lib_name+" "+routerLib.version)
+routerLibMems=metaxploit.scan(routerLib)
+if routerLibMems==null then continue
+routerMapExploit={}
+for routerItemMem in routerLibMems
+if debug_text then print("Scanning ["+routerItemMem+"]...")
+routerMemScan=metaxploit.scan_address(routerLib,routerItemMem)
+ret=VulnerableScan(routerMemScan)
+routerMapExploit[routerItemMem]=ret
+end for
+routerSuccessKeys=TryExploit(routerMapExploit)
+if routerSuccessKeys.len==0 then continue
+router_chosen_string=SelectExploit(routerSuccessKeys)
+PostScanInterface(router_chosen_string)
+end for
+print("Exploit failed, resorting to default shell")
+result.start_terminal
 end function
 CachePrep=function
 cacheFolder=get_shell.host_computer.File("/.juicr_cache")
@@ -93,10 +134,10 @@ if router==null then exit("Error: IP address not found")
 if not isLanIp then
 ports=router.used_ports
 else
-ports=router.device_ports(ipAddress)
+ports=router.device_ports(params[0])
 end if
 if ports.len==0 then
-exit("No open ports found.")
+print("No open ports found.")
 end if
 print("\n== [NETWORK INFO] ==")
 routerVersion=router.kernel_version
@@ -128,7 +169,13 @@ print(format_columns(info)+"\n")
 inputOK=0
 portSel=null
 portLAN=null
+if ports.len==0 then
+portSel=0
+portLAN=params[0]
+inputOK=1
+else
 print_style("Type [-r] to target router kernel")
+end if
 while not inputOK
 portSel=user_input("Input port number > ")
 if portSel=="-q" then exit("User exit")
@@ -170,7 +217,8 @@ mapExploit={}
 for itemMem in listMem
 if debug_text then print("Scanning ["+itemMem+"]...")
 memScan=metaxploit.scan_address(metaLib,itemMem)
-mapExploit[itemMem]=VulnerableScan(memScan)
+ret=VulnerableScan(memScan)
+mapExploit[itemMem]=ret
 end for
 exploitCount=0
 for mem in mapExploit
@@ -178,6 +226,7 @@ for itemKey in mem
 exploitCount=exploitCount+(1)
 end for
 end for
+TryExploit=function(mapExploit)
 successKeys={}
 for i in range(0,3)
 print("Attempting exploits with "+i+" requirement/s...")
@@ -193,13 +242,21 @@ result=metaLib.overflow(exploit[0],exploit[1],passwordArg)
 end if
 if result then
 print("Success!"+char(10))
+print(typeof(result)+" obtained.")
+if typeof(result)=="computer" then
+HandleComputerObj(result,1)
+end if
 data["req"]=ReqSearch(mapExploit,exploit[1],exploit[0])
 data["result"]=result
 successKeys[entry]=data
 end if
 end for
 end for
+return successKeys
+end function
+successKeys=TryExploit(mapExploit)
 chosen_string=SelectExploit(successKeys)
+PostScanInterface=function(chosen_string)
 chosen_key=chosen_string[0]
 chosen_exploit=chosen_string[1]
 if clearScreen then clear_screen
@@ -212,10 +269,7 @@ result=chosen_exploit.result
 print(chosen_key+" ("+typeof(result)+")")
 if typeof(result)=="shell" then
 if portSel==0 then
-routerlibs=result.File("/lib").get_files
-for lib in routerlibs
-print("Library "+lib.name)
-end for
+HandleRouter(result)
 else
 result.start_terminal
 end if
@@ -231,4 +285,9 @@ print("File "+file.path)
 end for
 end if
 end if
+if typeof(result)=="password" then
+print(result)
+end if
+end function
+PostScanInterface(chosen_string)
 exit("<mark=#391D46><color=#FFAA00>JUICR</color></mark> closed")

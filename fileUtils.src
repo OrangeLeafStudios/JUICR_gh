@@ -1,17 +1,7 @@
 // fileUtils.src
 
-fs_rm = function(params)
-	if params.len < 1 or params.len > 2 or params[0] == "-h" or params[0] == "--help" then
-		return command_info("rm_usage")
-	end if
-
-	pathFile = get_abs_path(params[0])
-	isRecursive = 0
-	if params[0] == "-r" then
-		if params.len == 1 then return command_info("rm_usage")
-		isRecursive = 1
-		pathFile = params[1]
-	end if
+fs_rm = function(pathStr, isRecursive=false)
+	pathFile = get_abs_path(pathStr)
 
 	file = get_shell.host_computer.File(pathFile)
 	if file == null then return "rm: file not found: " + pathFile
@@ -26,12 +16,9 @@ fs_rm = function(params)
 	return 1
 end function
 
-fs_touch = function(params)
-	if params.len != 1 or params[0] == "-h" or params[0] == "--help" then
-		return command_info("touch_usage")
-	end if
+fs_touch = function(pathStr)
 
-	pathFile = get_abs_path(params[0])
+	pathFile = get_abs_path(pathStr)
 	pathParent = parent_path(pathFile)
 	computer = get_shell.host_computer
 
@@ -49,13 +36,10 @@ fs_touch = function(params)
 	return 1
 end function
 
-fs_mkdir = function(params)
-	if params.len != 1 or params[0] == "-h" or params[0] == "--help" then
-		return command_info("mkdir_usage")
-	end if
+fs_mkdir = function(pathStr)
 
 	computer = get_shell.host_computer
-	pathFile = get_abs_path(params[0])
+	pathFile = get_abs_path(pathStr)
 	pathParent = parent_path(pathFile)
 	existFile = computer.File(pathFile)
 
@@ -79,12 +63,9 @@ fs_mkdir = function(params)
 	return 1
 end function
 
-fs_rmdir = function(params)
-	if params.len != 1 or params[0] == "-h" or params[0] == "--help" then
-		return command_info("rmdir_usage")
-	end if
+fs_rmdir = function(pathStr)
 
-	pathFile = get_abs_path(params[0])
+	pathFile = get_abs_path(pathStr)
 	computer = get_shell.host_computer
 	file = computer.File(pathFile)
 
@@ -103,11 +84,28 @@ fs_rmdir = function(params)
 	return 1
 end function
 
-run_fs_command = function(cmd, params)
-	print(cmd+"|"+params)a
-	if cmd == "rm" then return fs_rm(params)
-	if cmd == "touch" then return fs_touch(params)
-	if cmd == "mkdir" then return fs_mkdir(params)
-	if cmd == "rmdir" then return fs_rmdir(params)
-	return "unknown command: " + cmd
+SaveExploits = function()
+	cacheFolder = get_shell.host_computer.File("/.juicr_cache")
+	CachePrep()
+	exploitFile = cacheFolder.File("/exploits.cache")
+	if exploitFile == null then
+		get_shell.host_computer.create_file(cacheFolder.path, "exploits.cache", "")
+		exploitFile = cacheFolder.File("/exploits.cache")
+	end if
+	exploitData = JSON.stringify(mapExploit)
+	exploitFile.set_content(exploitData)
+end function
+
+LoadExploits = function()
+	cacheFolder = get_shell.host_computer.File("/.juicr_cache")
+	exploitFile = cacheFolder.File("/exploits.cache")
+	if exploitFile == null then
+		return {}
+	end if
+	exploitData = exploitFile.get_content()
+	if exploitData.len == 0 then
+		return {}
+	end if
+	mapExploitLoaded = JSON.parse(exploitData)
+	return mapExploitLoaded
 end function

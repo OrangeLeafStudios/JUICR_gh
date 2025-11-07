@@ -6,6 +6,7 @@ requirementWrite=0
 unsecVals={}
 unsecVal=""
 if debug_text then print_style("VulnerableScan >> Interpreting output...")
+print(memScan)
 for word in memScan.replace(char(10)," ").split(" ")
 if stringHist.join=="string copy in" or stringHist.join=="loop in array" then
 unsecVal=StripStyle(word[:word.len-1])
